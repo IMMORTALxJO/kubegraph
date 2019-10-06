@@ -5,9 +5,7 @@ from src.utils import compare_strings, group_similars, join_strings
 
 class TestCompareStrings(unittest.TestCase):
     def test_positive(self):
-        """
-        Test positive cases
-        """
+        """Test positive cases"""
         self.assertTrue(compare_strings("server.com", "server.com"))
         self.assertTrue(compare_strings("aserver.com", "server.com"))
         self.assertTrue(compare_strings("server.com", "aserver.com"))
@@ -29,9 +27,7 @@ class TestCompareStrings(unittest.TestCase):
 
 class TestGroupSimilars(unittest.TestCase):
     def test_positive(self):
-        """
-        Test positive cases
-        """
+        """Test positive cases"""
         self.assertEqual(group_similars('aaaa', 'aaaa'), [{'aaaa'}])
         self.assertEqual(group_similars('aaaa', 'aaaba'), [{'aaaa', 'aaaba'}])
         self.assertEqual(group_similars('aaaa', 'bbbb'), [{'aaaa'}, {'bbbb'}])
@@ -41,9 +37,7 @@ class TestGroupSimilars(unittest.TestCase):
 
 class TestJoinStrings(unittest.TestCase):
     def test_positive(self):
-        """
-        Test positive cases
-        """
+        """Test positive cases"""
         self.assertEqual(join_strings('aaaa', 'aaaa'), 'aaaa')
         self.assertEqual(join_strings('aaaa', 'aaaba'), 'aaa{,b}a')
         self.assertEqual(join_strings('server-1.com', 'server-2.com'), 'server-{1,2}.com')

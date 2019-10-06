@@ -4,22 +4,35 @@ from difflib import SequenceMatcher
 # compare strings
 
 
-def compare_strings(a, b, cache={}):
-    cache_key = (a, b)
-    if cache_key in cache:
-        return cache[cache_key]
-    match_ratio = SequenceMatcher(None, a, b).ratio()
-    good_ratio = (1 - 3 / (len(a) + len(b)))
-    cache[cache_key] = match_ratio >= good_ratio
-    return cache[cache_key]
-
-# join strings
+COMPARE_STRINGS_CACHE = {}
 
 
-def join_strings(*args, cache={}):
+def compare_strings(first, second):
+    """
+    Check if strings are simillar:
+    kafka-1.test, kafka-2.test => true
+    kafka-1.test, mongodb-2.test => false
+    """
+    cache_key = (first, second)
+    if cache_key in COMPARE_STRINGS_CACHE:
+        return COMPARE_STRINGS_CACHE[cache_key]
+    match_ratio = SequenceMatcher(None, first, second).ratio()
+    good_ratio = (1 - 3 / (len(first) + len(second)))
+    COMPARE_STRINGS_CACHE[cache_key] = match_ratio >= good_ratio
+    return COMPARE_STRINGS_CACHE[cache_key]
+
+
+JOIN_STRINGS_CACHE = {}
+
+
+def join_strings(*args):
+    """
+    Join strings:
+    kafka-1.test, kafka-2.test => kafka-{1,2}.test
+    """
     cache_key = (args,)
-    if cache_key in cache:
-        return cache[cache_key]
+    if cache_key in JOIN_STRINGS_CACHE:
+        return JOIN_STRINGS_CACHE[cache_key]
     args = [str(arg) for arg in args if arg != '']
     args = sorted(args, key=len, reverse=True)
     left = ''
@@ -28,7 +41,7 @@ def join_strings(*args, cache={}):
         left += args[0][left_padding]
         left_padding += 1
     if left == args[0]:
-        cache[cache_key] = left
+        JOIN_STRINGS_CACHE[cache_key] = left
         return left
     right = ''
     right_padding = -1
@@ -39,24 +52,28 @@ def join_strings(*args, cache={}):
     diff = [arg[left_padding:(len(arg) + right_padding)] for arg in args]
     diff = sorted((set(diff)))
     ret = '%s{%s}%s' % (left, str.join(',', diff), right)
-    cache[cache_key] = ret
+    JOIN_STRINGS_CACHE[cache_key] = ret
     return ret
 
 
 def group_similars(*args):
+    """
+    Join simillar strings:
+    kafka-1.test, mongodb-1, kafka-2.test, mongodb-2 => [ {kafka-1.test, kafka-2.test}, {mognodb-1, mongodb-2} ]
+    """
     skip = set()
-    groups = list()
-    for a in args:
-        if a in skip:
+    groups = []
+    for arg in args:
+        if arg in skip:
             continue
         group = set()
-        skip.add(a)
-        group.add(a)
-        for b in args:
-            if b in skip:
+        skip.add(arg)
+        group.add(arg)
+        for barg in args:
+            if barg in skip:
                 continue
-            if compare_strings(a, b):
-                skip.add(b)
-                group.add(b)
+            if compare_strings(arg, barg):
+                skip.add(barg)
+                group.add(barg)
         groups.append(group)
     return groups

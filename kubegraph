@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from src.KubeGraph import KubeGraph
+from src.kubegraph import KubeGraph
 import click
 
 
@@ -8,6 +8,7 @@ import click
 @click.option("--ignore-substrings", default=KubeGraph.defaults['ignore_substrings'], help="List of substrings for ignoring env names")
 @click.option("--namespace", default=KubeGraph.defaults['namespace'], help="Kubernetes namespace name")
 @click.option("--skip-ingresses", is_flag=True, help="Do not collect ingresses")
+@click.option("--skip-services", is_flag=True, help="Do not collect services")
 @click.option("--label-selector", default=KubeGraph.defaults['label_selector'], help="Label selector for pods,services and ingresses")
 @click.option("--pod-label-selector", default=KubeGraph.defaults['pod_label_selector'], help="Label selector for pods")
 @click.option("--svc-label-selector", default=KubeGraph.defaults['svc_label_selector'], help="Label selector for services")
@@ -17,7 +18,8 @@ def kubeGraphCLI(**kwargs):
     """Print relatives of your kubernetes cluster based on pods environment variables."""
     kubegraph = KubeGraph(**kwargs)
     kubegraph.init_client()
-    kubegraph.collect_services()
+    if not kwargs['skip_services']:
+        kubegraph.collect_services()
     kubegraph.collect_pods()
     if not kwargs['skip_ingresses']:
         kubegraph.collect_ingresses()

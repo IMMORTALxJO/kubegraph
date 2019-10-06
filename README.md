@@ -7,6 +7,13 @@ Run tests:
 pip install pytest pycodestyle
 pytest -v
 ```
+Get coverage:
+```
+pip install pytest pycodestyle coverage
+coverage erase
+coverage run --branch --source=. -m pytest
+coverage report
+```
 Run linter:
 ```
 pip install pycodestyle

@@ -14,6 +14,7 @@ class KubeGraph:
         "ignore_substrings": "pass,token,secret,hash,salt,_id,allow",
         "output_format": "graphviz",
         "hide_pods_in_service": True,
+        "group_similar": True,
         "label_selector": "",
         "pod_label_selector": "",
         "ingress_label_selector": "",
@@ -45,7 +46,7 @@ class KubeGraph:
                 self.options[key] = kwargs[key]
             else:
                 self.options[key] = value
-        self.options["ignore_substrings"] = set([str.lower(x) for x in str.split(self.options["ignore_substrings"], ',')])
+        self.options["ignore_substrings"] = [str.lower(x) for x in str.split(self.options["ignore_substrings"], ',')]
         if self.options["namespace"] == "":
             self.options["namespace"] = False
         if self.options["label_selector"] != "":
@@ -87,13 +88,15 @@ class KubeGraph:
             self.services['%s.svc.cluster.local' % service_name] = svc
 
     def collect_pods(self):
-        def get_config_map_vars(namespace, configmap, cache={}):
-            cache_key = '%s/%s' % (namespace, configmap)
-            if cache_key in cache:
-                return cache[cache_key]
-            config = self.clients['v1'].list_namespaced_config_map(namespace, field_selector='metadata.name=%s' % configmap, watch=False).items[0]
-            cache[cache_key] = config.data
-            return cache[cache_key]
+        configmap_cache = {}
+
+        def get_config_map_vars(namespace, name):
+            cache_key = '%s/%s' % (namespace, name)
+            if cache_key in configmap_cache:
+                return configmap_cache[cache_key]
+            configmap = self.clients['v1'].list_namespaced_config_map(namespace, field_selector='metadata.name=%s' % name, watch=False).items[0]
+            configmap_cache[cache_key] = configmap.data
+            return configmap_cache[cache_key]
         if self.options["namespace"]:
             pods_list = self.clients['v1'].list_namespaced_pod(self.options["namespace"], label_selector=self.options["pod_label_selector"], watch=False).items
         else:
@@ -130,7 +133,6 @@ class KubeGraph:
                         if var.config_map_ref:
                             for name, value in get_config_map_vars(pod.metadata.namespace, var.config_map_ref.name).items():
                                 pod_env[name] = value
-                # TODO: last change - exec `env` inside a pod if len(pod_envs) == 0
             pod.env = [(name, value) for (name, value) in pod_env.items() if self.filter_ignored_string(str.lower(name))]
             self.pods[pod.metadata.name] = pod
 
@@ -153,13 +155,15 @@ class KubeGraph:
                 return False
         return True
 
-    def is_string_address(self, namespace, value, cache={}):
-        if value in cache:
-            return cache[value]
+    is_string_address_cache = {}
+
+    def is_string_address(self, namespace, value):
+        if value in self.is_string_address_cache:
+            return self.is_string_address_cache[value]
         parsed_hostname = False
         if value in self.services:  # mysqlserver
             parsed_hostname = value
-        elif ('%s.%s' % (value, namespace)) in self.services:  # mysqlserver.default
+        elif '%s.%s' % (value, namespace) in self.services:  # mysqlserver.default
             parsed_hostname = value
         elif '://' in value:  # https://api-server
             parsed_hostname = urlparse(value).hostname
@@ -174,10 +178,10 @@ class KubeGraph:
         if parsed_hostname and parsed_hostname not in ('0.0.0.0', '127.0.0.1'):
             if '%s.%s' % (parsed_hostname, namespace) in self.services:
                 parsed_hostname = '%s.%s' % (parsed_hostname, namespace)
-            cache[value] = parsed_hostname
+            self.is_string_address_cache[value] = parsed_hostname
         else:
-            cache[value] = False
-        return cache[value]
+            self.is_string_address_cache[value] = False
+        return self.is_string_address_cache[value]
 
     def get_schema_from_name(self, env_name):
         low_name = str.lower(env_name)
@@ -221,11 +225,11 @@ class KubeGraph:
                     if target != edge:
                         print('"%s" -> "%s"' % (edge, target))
             print('}')
-        elif self.options['output_format'] == 'json':
-            print(json.dumps(self.graph, indent=4, sort_keys=True))
         elif self.options['output_format'] == 'mermaidjs':
             print("### https://mermaidjs.github.io/mermaid-live-editor/\ngraph LR")
             for (edge, targets) in self.graph.items():
                 for target in targets:
                     if target != edge:
                         print('%s("%s") --> %s("%s")' % (str(hash(edge)), edge, str(hash(target)), target))
+        elif self.options['output_format'] == 'json':
+            print(json.dumps(self.graph, indent=4, sort_keys=True))
