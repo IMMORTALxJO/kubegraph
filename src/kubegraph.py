@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from kubernetes import client, config
 from src.utils import group_similars, join_strings
+from src.resourses import get_scheme_from_name, get_scheme_from_port
 from urllib.parse import urlparse
 import socket
 import re
@@ -13,7 +14,7 @@ class KubeGraph:
         "namespace": "",
         "ignore_substrings": "pass,token,secret,hash,salt,_id,allow",
         "output_format": "graphviz",
-        "hide_pods_in_service": True,
+        "replace_pods_by_services": True,
         "group_similar": True,
         "label_selector": "",
         "pod_label_selector": "",
@@ -21,18 +22,6 @@ class KubeGraph:
         "svc_label_selector": ""
     }
     output_formats = ["graphviz", "mermaidjs", "json"]
-    schema_to_name_map = {
-        "mysql": ("mysql",),
-        "pgsql": ("postgre", "pgsql"),
-        "mongo": ("mongo", "documentdb",),
-        "redis": ("redis",),
-        "kafka": ("kafka",),
-        "rabbitmq": ("rabbit",),
-        "vertica": ("vertica",),
-        "memcache": ("memcache",),
-        "aerospike": ("aerospike",),
-        "smtp": ("smtp",)
-    }
 
     def __init__(self, *args, **kwargs):
         self.graph = {}
@@ -158,38 +147,44 @@ class KubeGraph:
     is_string_address_cache = {}
 
     def is_string_address(self, namespace, value):
+        """
+        Detect if string is looking like address and return set of ( scheme, hostname, port ) :
+            "http://example.com" -> ("http", "example.com", False)
+            "example.com" -> (False, "example.com", False)
+            "mysqlserver.default" ( service ) -> (False, "mysqlserver.default", False )
+            "mysqlserver" ( service )  -> (False, "mysqlserver.default", False )
+        """
         if value in self.is_string_address_cache:
             return self.is_string_address_cache[value]
-        parsed_hostname = False
-        if value in self.services:  # mysqlserver
-            parsed_hostname = value
-        elif '%s.%s' % (value, namespace) in self.services:  # mysqlserver.default
-            parsed_hostname = value
+        parsed = False
+        if value in self.services:  # mysqlserver.default
+            print("FOUND!", namespace, value)
+            parsed = urlparse(value)
+        elif '%s.%s' % (value, namespace) in self.services:  # mysqlserver
+            print("FOUND2!", namespace, value)
+            parsed = urlparse(value)
         elif '://' in value:  # https://api-server
-            parsed_hostname = urlparse(value).hostname
+            parsed = urlparse(value)
         elif re.compile(r"[^:]*:\d+").match(value):  # kafka:8200
-            parsed_hostname = urlparse('tcp://%s' % value).hostname
+            parsed = urlparse('unknown://%s' % value)
         elif '.' in value:  # google.com
             try:
                 socket.gethostbyname(value)
-                parsed_hostname = urlparse('http://%s' % value).hostname
+                parsed = urlparse('unknown://%s' % value)
             except Exception:
                 pass
-        if parsed_hostname and parsed_hostname not in ('0.0.0.0', '127.0.0.1'):
-            if '%s.%s' % (parsed_hostname, namespace) in self.services:
-                parsed_hostname = '%s.%s' % (parsed_hostname, namespace)
-            self.is_string_address_cache[value] = parsed_hostname
+        if parsed and parsed.hostname and parsed.hostname not in ('0.0.0.0', '127.0.0.1'):
+            hostname = parsed.hostname
+            scheme = False
+            port = False
+            if parsed.scheme:
+                scheme = parsed.scheme
+            if parsed.port:
+                port = parsed.port
+            self.is_string_address_cache[value] = (scheme, hostname, port)
         else:
             self.is_string_address_cache[value] = False
         return self.is_string_address_cache[value]
-
-    def get_schema_from_name(self, env_name):
-        low_name = str.lower(env_name)
-        for schema, keys in self.schema_to_name_map.items():
-            for key in keys:
-                if key in low_name:
-                    return '%s://' % schema
-        return ""
 
     def generate_graph(self):
         for pod_name, pod in self.pods.items():
@@ -198,14 +193,30 @@ class KubeGraph:
                 for candidate in value.split(','):
                     parsed_address = self.is_string_address(pod.metadata.namespace, candidate)
                     if parsed_address:
-                        schema = self.get_schema_from_name(name)
-                        env_hostnames.add('%s%s' % (schema, parsed_address))
+                        (scheme, host, port) = parsed_address
+                        if host in self.services:
+                            env_hostnames.add(host)
+                            continue
+                        if '%s.%s' % (host, pod.metadata.namespace) in self.services:
+                            env_hostnames.add('%s.%s' % (host, pod.metadata.namespace))
+                            continue
+                        if not scheme or scheme == "unknown":
+                            scheme = get_scheme_from_name(name)
+                            if not scheme:
+                                scheme = get_scheme_from_name(host)
+                            if not scheme and port:
+                                scheme = get_scheme_from_port(port)
+                        if scheme:
+                            scheme += '://'
+                        env_hostnames.add('%s%s' % (scheme, host))
+
             groupped_values = [join_strings(*sim_group) for sim_group in group_similars(*env_hostnames)]
-            if len(groupped_values) > 0:
+            if groupped_values:
                 self.graph[pod_name] = groupped_values
+
         for (_, svc) in self.services.items():
             service_name = svc['service_name']
-            if self.options['hide_pods_in_service']:
+            if self.options['replace_pods_by_services']:
                 for pod in svc['pods']:
                     if pod in self.graph:
                         self.graph[service_name] = self.graph[pod]
@@ -218,18 +229,20 @@ class KubeGraph:
                 self.graph[domain] = [service]
 
     def output(self):
+        output = ''
         if self.options['output_format'] == 'graphviz':
-            print("### http://www.webgraphviz.com/\ndigraph g{\nrankdir=LR;")
+            output += "### http://www.webgraphviz.com/\ndigraph g{\n    rankdir=LR;"
             for (edge, targets) in self.graph.items():
                 for target in targets:
                     if target != edge:
-                        print('"%s" -> "%s"' % (edge, target))
-            print('}')
+                        output += '    "%s" -> "%s"' % (edge, target) + "\n"
+            output += '}'
         elif self.options['output_format'] == 'mermaidjs':
-            print("### https://mermaidjs.github.io/mermaid-live-editor/\ngraph LR")
+            output += "### https://mermaidjs.github.io/mermaid-live-editor/\ngraph LR"
             for (edge, targets) in self.graph.items():
                 for target in targets:
                     if target != edge:
-                        print('%s("%s") --> %s("%s")' % (str(hash(edge)), edge, str(hash(target)), target))
+                        output += '%s("%s") --> %s("%s")' % (str(hash(edge)), edge, str(hash(target)), target) + "\n"
         elif self.options['output_format'] == 'json':
-            print(json.dumps(self.graph, indent=4, sort_keys=True))
+            output += json.dumps(self.graph, indent=4, sort_keys=True)
+        print(output)
