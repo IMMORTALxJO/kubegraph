@@ -27,12 +27,12 @@ NAMES_TO_SCHEMES = {
 }
 
 
-def get_scheme_from_name( name ):
+def get_scheme_from_name(name):
     """
     Return scheme based on string substrings
         MYSQL_HOST -> mysql
-    """ 
-    low_name = str.lower( name )
+    """
+    low_name = str.lower(name)
     for schema, keys in NAMES_TO_SCHEMES.items():
         for key in keys:
             if key in low_name:
@@ -70,7 +70,7 @@ def get_scheme_from_port(num):
     """
     Return scheme based on port
         3306 -> mysql
-    """ 
+    """
     if num in PORTS_TO_SCHEMES:
         return PORTS_TO_SCHEMES[num]
     return False

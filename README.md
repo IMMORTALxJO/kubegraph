@@ -11,7 +11,7 @@ Get coverage:
 ```
 pip install pytest pycodestyle coverage
 coverage erase
-coverage run --branch --source=. -m pytest
+coverage run --branch --omit='./src/tests/*' --source=. -m pytest
 coverage report
 ```
 Run linter:
