@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from kubernetes import client, config
 from src.utils import group_similars, join_strings
-from src.resourses import get_scheme_from_name, get_scheme_from_port
+from src.resources import get_scheme_from_name, get_scheme_from_port, get_port_from_environment_vars
 from urllib.parse import urlparse
 import socket
 import re
@@ -192,23 +192,30 @@ class KubeGraph:
             for (name, value) in pod.env:
                 for candidate in value.split(','):
                     parsed_address = self.is_string_address(pod.metadata.namespace, candidate)
-                    if parsed_address:
-                        (scheme, host, port) = parsed_address
-                        if host in self.services:
-                            env_hostnames.add(host)
-                            continue
-                        if '%s.%s' % (host, pod.metadata.namespace) in self.services:
-                            env_hostnames.add('%s.%s' % (host, pod.metadata.namespace))
-                            continue
-                        if not scheme or scheme == "unknown":
-                            scheme = get_scheme_from_name(name)
-                            if not scheme:
-                                scheme = get_scheme_from_name(host)
-                            if not scheme and port:
+                    if not parsed_address:
+                        continue
+                    (scheme, host, port) = parsed_address
+                    if host in self.services:
+                        env_hostnames.add(host)
+                        continue
+                    if '%s.%s' % (host, pod.metadata.namespace) in self.services:
+                        env_hostnames.add('%s.%s' % (host, pod.metadata.namespace))
+                        continue
+                    if not scheme or scheme == "unknown":
+                        scheme = get_scheme_from_name(name)
+                        if not scheme:
+                            scheme = get_scheme_from_name(host)
+                        if not scheme and port:
+                            scheme = get_scheme_from_port(port)
+                        if not scheme:
+                            port = get_port_from_environment_vars(name, pod.env)
+                            if port:
                                 scheme = get_scheme_from_port(port)
-                        if scheme:
-                            scheme += '://'
-                        env_hostnames.add('%s%s' % (scheme, host))
+                    if scheme:
+                        scheme += '://'
+                    else:
+                        scheme = ''
+                    env_hostnames.add('%s%s' % (scheme, host))
 
             groupped_values = [join_strings(*sim_group) for sim_group in group_similars(*env_hostnames)]
             if groupped_values:

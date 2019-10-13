@@ -74,3 +74,16 @@ def get_scheme_from_port(num):
     if num in PORTS_TO_SCHEMES:
         return PORTS_TO_SCHEMES[num]
     return False
+
+
+def get_port_from_environment_vars(name, pod_envs):
+    """
+    Return port based on pod environment variables
+    """
+    def get_prefix(name):
+        return str.join('_', name.split('_')[:-1])
+    prefix = get_prefix(name)
+    for (key, value) in pod_envs:
+        if key.split('_')[-1:][0].lower() == 'port' and prefix == get_prefix(key):
+            return value
+    return False

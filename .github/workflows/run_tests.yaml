@@ -18,9 +18,9 @@ jobs:
       run: |
         pip install pytest pycodestyle
         pytest -v
-    - uses: engineerd/setup-kind@v0.1.0
-    - name: Prepare KinD
-      run: |
-        export KUBECONFIG="$(kind get kubeconfig-path)"
-        kubectl cluster-info
-        kubectl get pods -n kube-system
+    # - uses: engineerd/setup-kind@v0.1.0
+    # - name: Prepare KinD
+    #   run: |
+    #     export KUBECONFIG="$(kind get kubeconfig-path)"
+    #     kubectl cluster-info
+    #     kubectl get pods -n kube-system

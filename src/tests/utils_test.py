@@ -43,6 +43,8 @@ class TestJoinStrings(unittest.TestCase):
         self.assertEqual(join_strings('server-1.com', 'server-2.com'), 'server-{1,2}.com')
         self.assertEqual(join_strings('server-2.com', 'server-1.com'), 'server-{1,2}.com')
         self.assertEqual(join_strings('server-1.com', 'server-10.com'), 'server-1{,0}.com')
+        # get from cache
+        self.assertEqual(join_strings('aaaa', 'aaaa'), 'aaaa')
 #        self.assertEqual(join_strings('server-1.com','server-2.com','server-10.com'), 'server-{1,2,10}.com')
 
 
