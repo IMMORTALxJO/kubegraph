@@ -1,0 +1,23 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: podname
+spec:
+  containers:
+    - name: containername
+      image: alpine:3.7
+      command: [ "sleep", "60" ]
+      envFrom:
+      - configMapRef:
+          name: test-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-config
+data:
+  ENV_VAR_1: "https://example.com"
+  ENV_VAR_2: "https://test.com"
+  ENV_VAR_3: "string"
+  ENV_VAR_4: "12345"

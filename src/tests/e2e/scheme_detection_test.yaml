@@ -1,0 +1,21 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: podname
+spec:
+  containers:
+    - name: containername
+      image: alpine:3.7
+      command: [ "sleep", "60" ]
+      env:
+      - name: "SCHEME_FROM_NAME_MYSQL"
+        value: string.com
+      - name: "SCHEME_FROM_SCHEME"
+        value: postgre://test
+      - name: "SCHEME_FROM_PORT"
+        value: server:27017
+      - name: "SCHEME_FROM_SIMILAR_VALUE_HOST"
+        value: test.com
+      - name: "SCHEME_FROM_SIMILAR_VALUE_PORT"
+        value: "6379"

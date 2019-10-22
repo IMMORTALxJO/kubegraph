@@ -71,8 +71,8 @@ def get_scheme_from_port(num):
     Return scheme based on port
         3306 -> mysql
     """
-    if num in PORTS_TO_SCHEMES:
-        return PORTS_TO_SCHEMES[num]
+    if str(num) in PORTS_TO_SCHEMES:
+        return PORTS_TO_SCHEMES[str(num)]
     return False
 
 

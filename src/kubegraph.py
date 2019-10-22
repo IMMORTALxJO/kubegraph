@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 import socket
 import re
 import json
+import yaml
 
 
 class KubeGraph:
@@ -21,7 +22,7 @@ class KubeGraph:
         "ingress_label_selector": "",
         "svc_label_selector": ""
     }
-    output_formats = ["graphviz", "mermaidjs", "json"]
+    output_formats = ["graphviz", "mermaidjs", "json", "yaml"]
 
     def __init__(self, *args, **kwargs):
         self.graph = {}
@@ -53,7 +54,8 @@ class KubeGraph:
             svcs_list = self.clients['v1'].list_namespaced_service(
                 self.options["namespace"], label_selector=self.options["svc_label_selector"], watch=False).items
         else:
-            svcs_list = self.clients['v1'].list_service_for_all_namespaces(label_selector=self.options["svc_label_selector"], watch=False).items
+            svcs_list = self.clients['v1'].list_service_for_all_namespaces(
+                label_selector=self.options["svc_label_selector"], watch=False).items
         for service in svcs_list:
             if service.metadata.name == 'kubernetes':
                 continue
@@ -83,13 +85,16 @@ class KubeGraph:
             cache_key = '%s/%s' % (namespace, name)
             if cache_key in configmap_cache:
                 return configmap_cache[cache_key]
-            configmap = self.clients['v1'].list_namespaced_config_map(namespace, field_selector='metadata.name=%s' % name, watch=False).items[0]
+            configmap = self.clients['v1'].list_namespaced_config_map(
+                namespace, field_selector='metadata.name=%s' % name, watch=False).items[0]
             configmap_cache[cache_key] = configmap.data
             return configmap_cache[cache_key]
         if self.options["namespace"]:
-            pods_list = self.clients['v1'].list_namespaced_pod(self.options["namespace"], label_selector=self.options["pod_label_selector"], watch=False).items
+            pods_list = self.clients['v1'].list_namespaced_pod(self.options["namespace"], label_selector=self.options[
+                                                               "pod_label_selector"], watch=False).items
         else:
-            pods_list = self.clients['v1'].list_pod_for_all_namespaces(label_selector=self.options["pod_label_selector"], watch=False).items
+            pods_list = self.clients['v1'].list_pod_for_all_namespaces(
+                label_selector=self.options["pod_label_selector"], watch=False).items
         for pod in pods_list:
             pod_env = {}
             for container in pod.spec.containers:
@@ -130,7 +135,8 @@ class KubeGraph:
             ingresses_list = self.clients['v1beta1'].list_namespaced_ingress(
                 self.options["namespace"], label_selector=self.options["ingress_label_selector"], watch=False).items
         else:
-            ingresses_list = self.clients['v1beta1'].list_ingress_for_all_namespaces(label_selector=self.options["ingress_label_selector"], watch=False).items
+            ingresses_list = self.clients['v1beta1'].list_ingress_for_all_namespaces(
+                label_selector=self.options["ingress_label_selector"], watch=False).items
         for ingress in ingresses_list:
             for rule in ingress.spec.rules:
                 services = set()
@@ -158,10 +164,8 @@ class KubeGraph:
             return self.is_string_address_cache[value]
         parsed = False
         if value in self.services:  # mysqlserver.default
-            print("FOUND!", namespace, value)
             parsed = urlparse(value)
         elif '%s.%s' % (value, namespace) in self.services:  # mysqlserver
-            print("FOUND2!", namespace, value)
             parsed = urlparse(value)
         elif '://' in value:  # https://api-server
             parsed = urlparse(value)
@@ -219,7 +223,7 @@ class KubeGraph:
 
             groupped_values = [join_strings(*sim_group) for sim_group in group_similars(*env_hostnames)]
             if groupped_values:
-                self.graph[pod_name] = groupped_values
+                self.graph[pod_name] = sorted(groupped_values)
 
         for (_, svc) in self.services.items():
             service_name = svc['service_name']
@@ -238,18 +242,20 @@ class KubeGraph:
     def output(self):
         output = ''
         if self.options['output_format'] == 'graphviz':
-            output += "### http://www.webgraphviz.com/\ndigraph g{\n    rankdir=LR;"
+            output += "### http://www.webgraphviz.com/\ndigraph g{\n    rankdir=LR;\n"
             for (edge, targets) in self.graph.items():
                 for target in targets:
                     if target != edge:
                         output += '    "%s" -> "%s"' % (edge, target) + "\n"
             output += '}'
         elif self.options['output_format'] == 'mermaidjs':
-            output += "### https://mermaidjs.github.io/mermaid-live-editor/\ngraph LR"
+            output += "### https://mermaidjs.github.io/mermaid-live-editor/\ngraph LR\n"
             for (edge, targets) in self.graph.items():
                 for target in targets:
                     if target != edge:
                         output += '%s("%s") --> %s("%s")' % (str(hash(edge)), edge, str(hash(target)), target) + "\n"
         elif self.options['output_format'] == 'json':
             output += json.dumps(self.graph, indent=4, sort_keys=True)
-        print(output)
+        elif self.options['output_format'] == 'yaml':
+            output += yaml.dump(self.graph)
+        print(output, end='', flush=True)

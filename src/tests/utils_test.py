@@ -3,8 +3,8 @@ import unittest
 from src.utils import compare_strings, group_similars, join_strings
 
 
-class TestCompareStrings(unittest.TestCase):
-    def test_positive(self):
+class Utils(unittest.TestCase):
+    def test_compare_strings(self):
         """Test positive cases"""
         self.assertTrue(compare_strings("server.com", "server.com"))
         self.assertTrue(compare_strings("aserver.com", "server.com"))
@@ -24,9 +24,7 @@ class TestCompareStrings(unittest.TestCase):
 #        self.assertFalse(compare_strings("01","10"))
 #        self.assertTrue(compare_strings("abc","acd"))
 
-
-class TestGroupSimilars(unittest.TestCase):
-    def test_positive(self):
+    def test_group_similars(self):
         """Test positive cases"""
         self.assertEqual(group_similars('aaaa', 'aaaa'), [{'aaaa'}])
         self.assertEqual(group_similars('aaaa', 'aaaba'), [{'aaaa', 'aaaba'}])
@@ -34,9 +32,7 @@ class TestGroupSimilars(unittest.TestCase):
         self.assertEqual(group_similars('aaaa', 'bbbb'), [{'aaaa'}, {'bbbb'}])
         self.assertEqual(group_similars('aaaa', 'bbbb', 'aaaba'), [{'aaaa', 'aaaba'}, {'bbbb'}])
 
-
-class TestJoinStrings(unittest.TestCase):
-    def test_positive(self):
+    def test_join_strings(self):
         """Test positive cases"""
         self.assertEqual(join_strings('aaaa', 'aaaa'), 'aaaa')
         self.assertEqual(join_strings('aaaa', 'aaaba'), 'aaa{,b}a')
