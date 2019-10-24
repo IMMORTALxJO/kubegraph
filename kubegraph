@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from src.cli import KubeGraphCLI
+from src.cli import kubegraph_cli
 
 if __name__ == '__main__':
-    KubeGraphCLI()
+    kubegraph_cli()

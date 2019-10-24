@@ -1,0 +1,45 @@
+---
+answer:
+  podname:
+  - "https://server1.com"
+  - "https://server2.com"
+  - "https://server3.com"
+  podname2:
+  - "https://server1.com"
+  - "https://server2.com"
+
+namespace: default
+
+config: |-
+  ---
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: podname
+  spec:
+    containers:
+      - name: containername
+        image: alpine:3.7
+        command: [ "sleep", "60" ]
+        env:
+        - name: "ENV_VAR_1"
+          value: https://server1.com
+        - name: "ENV_VAR_2"
+          value: https://server2.com
+        - name: "ENV_VAR_3"
+          value: https://server3.com
+  ---
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: podname2
+  spec:
+    containers:
+      - name: containername
+        image: alpine:3.7
+        command: [ "sleep", "60" ]
+        env:
+        - name: "ENV_VAR_1"
+          value: https://server1.com
+        - name: "ENV_VAR_2"
+          value: https://server2.com

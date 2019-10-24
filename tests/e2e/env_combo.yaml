@@ -1,0 +1,56 @@
+---
+answer:
+  podname:
+  - "https://abcde.com"
+  - "https://example.com"
+  - "https://server.com"
+  - "https://test.com"
+
+namespace: default
+
+config: |-
+  ---
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: podname
+  spec:
+    containers:
+      - name: containername
+        image: alpine:3.7
+        command: [ "sleep", "60" ]
+        env:
+        - name: "ENV_VAR_1"
+          value: https://abcde.com
+        - name: "ENV_VAR_2"
+          value: ABCDEFG
+      - name: containername2
+        image: alpine:3.7
+        command: [ "sleep", "60" ]
+        env:
+        - name: "ENV_VAR_3"
+          valueFrom:
+            configMapKeyRef:
+              name: test-config-2
+              key: VAR
+        envFrom:
+        - configMapRef:
+            name: test-config-1
+  ---
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: test-config-1
+  data:
+    ENV_VAR_4: "https://example.com"
+    ENV_VAR_5: "https://test.com"
+    ENV_VAR_6: "string"
+    ENV_VAR_7: "12345"
+  ---
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: test-config-2
+  data:
+    VAR: "https://server.com"
+    VAR2: "12345"

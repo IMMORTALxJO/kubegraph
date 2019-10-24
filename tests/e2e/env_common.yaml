@@ -1,0 +1,28 @@
+---
+answer:
+  podname:
+  - "https://example.com"
+  - "https://test.com"
+
+namespace: default
+
+config: |-
+  ---
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: podname
+  spec:
+    containers:
+      - name: containername
+        image: alpine:3.7
+        command: [ "sleep", "60" ]
+        env:
+        - name: "ENV_VAR_1"
+          value: https://example.com
+        - name: "ENV_VAR_2"
+          value: https://test.com
+        - name: "ENV_VAR_3"
+          value: string
+        - name: "ENV_VAR_4"
+          value: "12345"

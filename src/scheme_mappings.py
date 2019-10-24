@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 NAMES_TO_SCHEMES = {
     # Relational databases
     "mysql": ["mysql"],
@@ -26,20 +27,6 @@ NAMES_TO_SCHEMES = {
     "zoo": ["zoo"]
 }
 
-
-def get_scheme_from_name(name):
-    """
-    Return scheme based on string substrings
-        MYSQL_HOST -> mysql
-    """
-    low_name = str.lower(name)
-    for schema, keys in NAMES_TO_SCHEMES.items():
-        for key in keys:
-            if key in low_name:
-                return schema
-    return False
-
-
 PORTS_TO_SCHEMES = {
     # Relational databases
     "3306": "mysql",
@@ -62,28 +49,14 @@ PORTS_TO_SCHEMES = {
     "5672": "rabbitmq",
     "9092": "kafka",
     "9094": "kafka",  # TLS
-    "2181": "zoo"
+    "2181": "zoo",
+
+    # WEB
+    "80": "http",
+    "443": "https"
 }
 
-
-def get_scheme_from_port(num):
-    """
-    Return scheme based on port
-        3306 -> mysql
-    """
-    if str(num) in PORTS_TO_SCHEMES:
-        return PORTS_TO_SCHEMES[str(num)]
-    return False
-
-
-def get_port_from_environment_vars(name, pod_envs):
-    """
-    Return port based on pod environment variables
-    """
-    def get_prefix(name):
-        return str.join('_', name.split('_')[:-1])
-    prefix = get_prefix(name)
-    for (key, value) in pod_envs:
-        if key.split('_')[-1:][0].lower() == 'port' and prefix == get_prefix(key):
-            return value
-    return False
+SCHEMES_TO_PORTS = {
+    scheme: int(port)
+    for port, scheme in PORTS_TO_SCHEMES.items()
+}

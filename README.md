@@ -21,16 +21,14 @@ digraph g{
 ```
 Options:
   --kubeconfig TEXT               Path to kubeconfig file
-  --ignore-substrings TEXT        List of substrings for ignoring env names
   --namespace TEXT                Kubernetes namespace name
-  --skip-ingresses                Do not collect ingresses
-  --skip-services                 Do not collect services
-  --label-selector TEXT           Label selector for pods, services and
+  --all-namespaces                Collect resources across all namespaces
+  --label-selector TEXT           Label selector for pods,services and
                                   ingresses
-  --pod-label-selector TEXT       Label selector for pods
-  --svc-label-selector TEXT       Label selector for services
-  --ingress-label-selector TEXT   Label selector for ingresses
-  --output-format [graphviz|mermaidjs|json]
+  --collect-services / --skip-services
+  --collect-ingresses / --skip-ingresses
+  --ignored-substrings TEXT       List of substrings for ignoring env names
+  -o, --output-format [json|yaml|graphviz]
                                   Output format
   --help                          Show this message and exit.
 ```
@@ -45,7 +43,7 @@ Get coverage:
 ```
 pip install pytest pycodestyle coverage
 coverage erase
-coverage run --branch --omit='./src/tests/*' --source=. -m pytest
+coverage run --branch --omit='./tests/*' --source=. -m pytest
 coverage report
 ```
 Run linter:
