@@ -6,13 +6,13 @@ class KubeConnector:
     clients = False
     opt_namespace = False
     opt_kubeconfig = "~/.kube/config"
-    opt_label_selector = ""
+    opt_selector = ""
 
     def __init__(self, **kwargs):
         if not self.clients:
             self.opt_namespace = kwargs.get("namespace", self.opt_namespace)
             self.opt_kubeconfig = kwargs.get("kubeconfig", self.opt_kubeconfig)
-            self.opt_label_selector = kwargs.get("label_selector", self.opt_label_selector)
+            self.opt_selector = kwargs.get("selector", self.opt_selector)
             config.load_kube_config(config_file=self.opt_kubeconfig)
             self.clients = {
                 "v1": client.CoreV1Api(),
@@ -22,7 +22,7 @@ class KubeConnector:
     def __get_resource(self, kind, client_version='v1'):
         opts = {
             "watch": False,
-            "label_selector": self.opt_label_selector
+            "label_selector": self.opt_selector
         }
         if self.opt_namespace:
             return getattr(self.clients[client_version], "list_namespaced_%s" % kind)(self.opt_namespace, **opts).items

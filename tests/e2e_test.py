@@ -29,9 +29,10 @@ def generator(yaml_path):
             cli_result = runner.invoke(kubegraph_cli, [
                 "--kubeconfig", os.getenv("KUBECONFIG", "~/.kube/config"),
                 "--namespace", test_data['namespace'],
-                "--output-format", "json"
+                "--output", "json"
             ])
             cli_output = json.loads(cli_result.output)
+            print(cli_output, test_data['answer'], yaml_path)
             self.assertEqual(cli_output, test_data['answer'], yaml_path)
         finally:
             yaml_deletion = subprocess.Popen(["kubectl", "delete", "--now", "-f", config.name])

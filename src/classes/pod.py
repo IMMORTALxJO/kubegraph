@@ -49,7 +49,7 @@ class Pod:
                         result.update(configmap_data)
         self.env = result
 
-    def filter(self, filter_rules):
+    def filter_envs(self, filter_rules):
         self.env = {
             env_name: env_value
             for env_name, env_value in self.env.items()

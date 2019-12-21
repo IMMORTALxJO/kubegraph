@@ -23,12 +23,12 @@ Options:
   --kubeconfig TEXT               Path to kubeconfig file
   --namespace TEXT                Kubernetes namespace name
   --all-namespaces                Collect resources across all namespaces
-  --label-selector TEXT           Label selector for pods,services and
+  --selector TEXT           Label selector for pods,services and
                                   ingresses
   --collect-services / --skip-services
   --collect-ingresses / --skip-ingresses
   --ignored-substrings TEXT       List of substrings for ignoring env names
-  -o, --output-format [json|yaml|graphviz]
+  -o, --output [json|yaml|graphviz]
                                   Output format
   --help                          Show this message and exit.
 ```
