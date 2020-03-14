@@ -11,22 +11,6 @@ CLI_DEFAULT_ARGS = {
 }
 
 
-CLI_DEFAULT_ARGS = {
-    "kubeconfig": "~/.kube/config",
-    "namespace": "default",
-    "ignore_substrings": "pass,token,secret,hash,salt,_id,allow",
-    "label_selector": ""
-}
-
-
-CLI_DEFAULT_ARGS = {
-    "kubeconfig": "~/.kube/config",
-    "namespace": "default",
-    "ignore_substrings": "pass,token,secret,hash,salt,_id,allow",
-    "label_selector": ""
-}
-
-
 @click.command()
 @click.option("--kubeconfig", default=os.getenv("KUBECONFIG", CLI_DEFAULT_ARGS['kubeconfig']), help="Path to kubeconfig file")
 @click.option("--namespace", default=CLI_DEFAULT_ARGS['namespace'], help="Kubernetes namespace name")
@@ -48,7 +32,6 @@ def kubegraph_cli(**kwargs):
     if not kwargs['skip_ingresses']:
         kubegraph.collect_ingresses()
 
-    # kubegraph.merge('svc', 'pod')
     if kwargs['output'] == "json":
         import json
         print(json.dumps(kubegraph.json, indent=4, sort_keys=True))

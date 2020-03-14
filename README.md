@@ -22,11 +22,12 @@ digraph g{
 Options:
   --kubeconfig TEXT               Path to kubeconfig file
   --namespace TEXT                Kubernetes namespace name
-  --all-namespaces                Collect resources across all namespaces
-  --selector TEXT           Label selector for pods,services and
+  -A, --all-namespaces            Collect resources across all namespaces
+  --selector TEXT                 Label selector for pods,services and
                                   ingresses
-  --collect-services / --skip-services
-  --collect-ingresses / --skip-ingresses
+  --skip-services
+  --skip-ingresses
+  --merge
   --ignored-substrings TEXT       List of substrings for ignoring env names
   -o, --output [json|yaml|graphviz]
                                   Output format
